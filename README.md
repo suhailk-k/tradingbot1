@@ -4,7 +4,7 @@ A sophisticated Bitcoin/USD futures trading bot powered by Google Gemini AI and 
 
 ## 🚀 Quick Deploy to Railway
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/yourusername/tradingbot1)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/suhailk-k/tradingbot1)
 
 **One-Click Deployment:** Click the button above to deploy instantly to Railway.app
 
