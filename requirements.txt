@@ -1,0 +1,33 @@
+# Trading Bot Dependencies (minimal working version for Python 3.13)
+python-binance==1.0.19
+ccxt==4.2.25
+pandas>=2.2.0
+numpy>=1.26.0
+ta==0.10.2
+python-dotenv==1.0.0
+google-generativeai==0.3.2
+aiohttp==3.9.1
+asyncio-mqtt==0.13.0
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Use simpler alternatives for visualization and web framework
+# matplotlib==3.8.2  # Commented out due to compilation issues
+# seaborn==0.13.0     # Commented out due to matplotlib dependency
+plotly==5.17.0
+streamlit==1.29.0
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Use older versions that don't require Rust compilation
+pydantic==1.10.13
+sqlalchemy==1.4.53
+# Extra utilities
+alembic==1.13.1
+structlog==23.2.0
+
+# Optional advanced features (commented out to avoid dependency issues)
+# redis==5.0.1
+# celery==5.3.4
+# prometheus-client==0.19.0
+# structlog==23.2.0

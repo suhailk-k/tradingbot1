@@ -1,0 +1,13 @@
+{
+  "name": "btc-trading-bot",
+  "version": "1.0.0",
+  "description": "BTC/USDT Futures Trading Bot with AI Analysis",
+  "main": "run_railway.py",
+  "scripts": {
+    "start": "python run_railway.py",
+    "test": "python test_bot.py"
+  },
+  "keywords": ["trading", "cryptocurrency", "binance", "ai", "btc", "futures"],
+  "author": "Trading Bot Developer",
+  "license": "MIT"
+}

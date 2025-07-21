@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python run_railway.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "always"
+
+[environments.production.variables]
+PYTHON_UNBUFFERED = "1"
+RAILWAY_ENVIRONMENT = "production"
