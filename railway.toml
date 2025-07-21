@@ -2,12 +2,11 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python run_simple.py"
+startCommand = "python run_minimal.py"
 healthcheckPath = "/"
-healthcheckTimeout = 100
+healthcheckTimeout = 60
 restartPolicyType = "always"
 
 [environments.production.variables]
 PYTHON_UNBUFFERED = "1"
-RAILWAY_ENVIRONMENT = "production"
 PORT = "8000"
