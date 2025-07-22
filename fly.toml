@@ -1,0 +1,25 @@
+app = "trading-bot-fly"
+primary_region = "iad"
+
+[build]
+
+[env]
+  IS_FLY = "true"
+  TRADING_MODE = "paper"
+  MAX_POSITION_SIZE = "3"
+  MAX_TRADES_PER_DAY = "2"
+
+[[services]]
+  internal_port = 8080
+  processes = ["app"]
+  protocol = "tcp"
+
+[processes]
+  app = "python run_fly_worker.py"
+
+[deploy]
+  release_command = "echo 'Deploying to Fly.io...'"
+
+[[mounts]]
+  source = "data"
+  destination = "/data"

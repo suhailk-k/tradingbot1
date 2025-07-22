@@ -1,0 +1,19 @@
+services:
+  - type: worker
+    name: trading-bot-worker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run_render_worker.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: IS_RENDER
+        value: "true"
+      - key: TRADING_MODE
+        value: "paper"
+      - key: MAX_POSITION_SIZE
+        value: "3"
+      - key: MAX_TRADES_PER_DAY
+        value: "2"
+    autoDeploy: true
+    preDeployCommand: echo "Starting Render deployment..."
