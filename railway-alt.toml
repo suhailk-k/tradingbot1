@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python3 run_railway_detect.py"
+startCommand = "./start_railway.sh"
 restartPolicyType = "always"
 restartPolicyMaxRetries = 10
 
