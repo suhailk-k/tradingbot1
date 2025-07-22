@@ -2,9 +2,10 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python run_console.py"
+startCommand = "python run_railway_worker.py"
 restartPolicyType = "always"
+restartPolicyMaxRetries = 10
 
 [environments.production.variables]
 PYTHON_UNBUFFERED = "1"
-PORT = "8000"
+RAILWAY_ENVIRONMENT = "production"
