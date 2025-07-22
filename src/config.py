@@ -5,7 +5,12 @@ Handles environment variables and application settings.
 
 import os
 from typing import Optional
-from pydantic import BaseSettings, Field
+try:
+    from pydantic import Field
+    from pydantic_settings import BaseSettings
+except ImportError:
+    # Fallback for older pydantic versions
+    from pydantic import BaseSettings, Field
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -21,6 +26,13 @@ class TradingConfig(BaseSettings):
     
     # Google Gemini API Configuration
     gemini_api_key: str = Field(..., env="GEMINI_API_KEY")
+    
+    # AI Optimization Settings
+    ai_enabled: bool = Field(True, env="AI_ENABLED")
+    ai_daily_limit: int = Field(50, env="AI_DAILY_LIMIT")
+    ai_analysis_interval: int = Field(300, env="AI_ANALYSIS_INTERVAL")  # 5 minutes
+    ai_cache_duration: int = Field(600, env="AI_CACHE_DURATION")  # 10 minutes
+    ai_minimum_signal_strength: float = Field(0.6, env="AI_MINIMUM_SIGNAL_STRENGTH")
     
     # Trading Configuration
     default_symbol: str = Field("BTCUSDT", env="DEFAULT_SYMBOL")

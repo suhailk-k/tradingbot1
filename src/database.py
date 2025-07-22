@@ -56,13 +56,32 @@ class DatabaseManager:
             session.refresh(trade)
             return trade
     
-    def get_trades(self, symbol: Optional[str] = None, limit: int = 100) -> List[Trade]:
+    def get_trades(self, symbol: Optional[str] = None, limit: int = 100) -> List[Dict]:
         """Get trades from database"""
         with self.get_session() as session:
             query = session.query(Trade)
             if symbol:
                 query = query.filter(Trade.symbol == symbol)
-            return query.order_by(Trade.timestamp.desc()).limit(limit).all()
+            trades = query.order_by(Trade.timestamp.desc()).limit(limit).all()
+            
+            # Convert to dictionaries to avoid session issues
+            trade_list = []
+            for trade in trades:
+                trade_dict = {
+                    'id': trade.id,
+                    'symbol': trade.symbol,
+                    'trade_type': trade.trade_type,
+                    'status': trade.status,
+                    'trading_mode': trade.trading_mode,
+                    'entry_price': trade.entry_price,
+                    'quantity': trade.quantity,
+                    'pnl': trade.pnl,
+                    'entry_time': trade.entry_time,
+                    'exit_time': trade.exit_time
+                }
+                trade_list.append(trade_dict)
+            
+            return trade_list
     
     def get_trade_by_id(self, trade_id: int) -> Optional[Trade]:
         """Get a specific trade by ID"""
@@ -139,9 +158,28 @@ class DatabaseManager:
     def get_open_trades(self, trading_mode):
         """Get all open trades for a trading mode"""
         with self.get_session() as session:
-            return session.query(Trade).filter(
+            trades = session.query(Trade).filter(
                 Trade.status == TradeStatus.OPEN
             ).all()
+            
+            # Convert to dictionaries to avoid session issues
+            trade_list = []
+            for trade in trades:
+                trade_dict = {
+                    'id': trade.id,
+                    'symbol': trade.symbol,
+                    'trade_type': trade.trade_type,
+                    'status': trade.status,
+                    'trading_mode': trade.trading_mode,
+                    'entry_price': trade.entry_price,
+                    'quantity': trade.quantity,
+                    'stop_loss': trade.stop_loss,
+                    'take_profit': trade.take_profit,
+                    'entry_time': trade.entry_time
+                }
+                trade_list.append(trade_dict)
+            
+            return trade_list
     
     def create_trade(self, trade_data):
         """Create a new trade record"""
@@ -150,8 +188,23 @@ class DatabaseManager:
             session.add(trade)
             session.flush()
             session.refresh(trade)
-            logger.info(f"Created trade: {trade.id} for {trade.symbol}")
-            return trade
+            # Create a detached copy to avoid session issues
+            trade_id = trade.id
+            trade_symbol = trade.symbol
+            logger.info(f"Created trade: {trade_id} for {trade_symbol}")
+            
+            # Return a dictionary instead of the ORM object to avoid session issues
+            return {
+                'id': trade.id,
+                'symbol': trade.symbol,
+                'trade_type': trade.trade_type,
+                'status': trade.status,
+                'trading_mode': trade.trading_mode,
+                'entry_price': trade.entry_price,
+                'quantity': trade.quantity,
+                'stop_loss': trade.stop_loss,
+                'take_profit': trade.take_profit
+            }
     
     def update_portfolio(self, trading_mode, portfolio_data):
         """Update portfolio record"""
@@ -187,16 +240,19 @@ class DatabaseManager:
                 return {
                     "total_trades": 0,
                     "winning_trades": 0,
+                    "losing_trades": 0,
                     "total_pnl": 0.0,
                     "win_rate": 0.0
                 }
             
             winning_trades = len([t for t in trades if t.pnl and t.pnl > 0])
+            losing_trades = len([t for t in trades if t.pnl and t.pnl <= 0])
             total_pnl = sum(t.pnl for t in trades if t.pnl)
             
             return {
                 "total_trades": len(trades),
                 "winning_trades": winning_trades,
+                "losing_trades": losing_trades,
                 "total_pnl": total_pnl,
                 "win_rate": (winning_trades / len(trades)) * 100 if trades else 0
             }
@@ -235,6 +291,35 @@ class DatabaseManager:
                 'losing_trades': len(trades) - winning_trades
             }
     
+    def update_trade(self, trade_id: int, update_data: Dict[str, Any]) -> bool:
+        """Update a trade record"""
+        with self.get_session() as session:
+            trade = session.query(Trade).filter(Trade.id == trade_id).first()
+            if trade:
+                for key, value in update_data.items():
+                    setattr(trade, key, value)
+                trade.updated_at = datetime.utcnow()
+                session.flush()
+                logger.info(f"Updated trade {trade_id}: {update_data}")
+                return True
+            return False
+
+    def close_trade(self, trade_id: int, exit_price: float, pnl: float) -> bool:
+        """Close a trade"""
+        with self.get_session() as session:
+            trade = session.query(Trade).filter(Trade.id == trade_id).first()
+            if trade:
+                trade.status = TradeStatus.CLOSED
+                trade.exit_price = exit_price
+                trade.exit_time = datetime.utcnow()
+                trade.pnl = pnl
+                trade.pnl_percent = (pnl / (trade.entry_price * trade.quantity)) * 100
+                trade.updated_at = datetime.utcnow()
+                session.flush()
+                logger.info(f"Closed trade {trade_id} with P&L: ${pnl:.2f}")
+                return True
+            return False
+
     def cleanup_old_data(self, days_to_keep: int = 90):
         """Clean up old data from database"""
         with self.get_session() as session:

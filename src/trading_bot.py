@@ -373,7 +373,7 @@ class TradingBot:
             self.last_signal_time = datetime.now()
             
             logger.info("✅ Trade executed",
-                       trade_id=trade.id,
+                       trade_id=trade['id'],
                        symbol=self.symbol,
                        side=side,
                        quantity=quantity,
@@ -458,7 +458,7 @@ class PositionManager:
         for trade in open_trades:
             await self._manage_single_position(trade, market_data, signal_data)
     
-    async def _manage_single_position(self, trade: Trade, market_data: Dict, signal_data: Dict):
+    async def _manage_single_position(self, trade: Dict, market_data: Dict, signal_data: Dict):
         """Manage a single position"""
         current_price = market_data['price_data']['price']
         
@@ -477,27 +477,27 @@ class PositionManager:
             await self._close_position(trade, current_price, "Signal Reversal")
             return
     
-    def _should_stop_loss(self, trade: Trade, current_price: float) -> bool:
+    def _should_stop_loss(self, trade: Dict, current_price: float) -> bool:
         """Check if stop loss should be triggered"""
-        if not trade.stop_loss:
+        if not trade.get('stop_loss'):
             return False
         
-        if trade.trade_type == TradeType.LONG:
-            return current_price <= trade.stop_loss
+        if trade['trade_type'] == TradeType.LONG:
+            return current_price <= trade['stop_loss']
         else:  # SHORT
-            return current_price >= trade.stop_loss
+            return current_price >= trade['stop_loss']
     
-    def _should_take_profit(self, trade: Trade, current_price: float) -> bool:
+    def _should_take_profit(self, trade: Dict, current_price: float) -> bool:
         """Check if take profit should be triggered"""
-        if not trade.take_profit:
+        if not trade.get('take_profit'):
             return False
         
-        if trade.trade_type == TradeType.LONG:
-            return current_price >= trade.take_profit
+        if trade['trade_type'] == TradeType.LONG:
+            return current_price >= trade['take_profit']
         else:  # SHORT
-            return current_price <= trade.take_profit
+            return current_price <= trade['take_profit']
     
-    def _should_reverse_position(self, trade: Trade, signal_data: Dict) -> bool:
+    def _should_reverse_position(self, trade: Dict, signal_data: Dict) -> bool:
         """Check if position should be closed due to signal reversal"""
         if signal_data['signal'] == 'HOLD':
             return False
@@ -506,28 +506,38 @@ class PositionManager:
         if signal_data['strength'] < 70:
             return False
         
-        if trade.trade_type == TradeType.LONG and signal_data['signal'] == 'SELL':
+        if trade['trade_type'] == TradeType.LONG and signal_data['signal'] == 'SELL':
             return True
-        elif trade.trade_type == TradeType.SHORT and signal_data['signal'] == 'BUY':
+        elif trade['trade_type'] == TradeType.SHORT and signal_data['signal'] == 'BUY':
             return True
         
         return False
     
-    async def _close_position(self, trade: Trade, exit_price: float, reason: str):
+    async def _close_position(self, trade: Dict, exit_price: float, reason: str):
         """Close a position"""
         try:
             # Close position on exchange
             if not self.binance.paper_trading:
-                await self.binance.close_position(trade.symbol)
+                await self.binance.close_position(trade['symbol'])
+            
+            # Calculate P&L
+            entry_price = trade['entry_price']
+            quantity = trade['quantity']
+            
+            if trade['trade_type'] == TradeType.LONG:
+                pnl = (exit_price - entry_price) * quantity
+            else:  # SHORT
+                pnl = (entry_price - exit_price) * quantity
             
             # Update trade in database
-            self.db.close_trade(trade.id, exit_price, 0.001)  # 0.1% fee
+            self.db.close_trade(trade['id'], exit_price, pnl)
             
             logger.info("Position closed",
-                       trade_id=trade.id,
-                       symbol=trade.symbol,
+                       trade_id=trade['id'],
+                       symbol=trade['symbol'],
                        reason=reason,
-                       exit_price=exit_price)
+                       exit_price=exit_price,
+                       pnl=f"${pnl:.2f}")
             
         except Exception as e:
             logger.error("Error closing position", 
@@ -541,9 +551,10 @@ class PositionManager:
         
         for trade in open_trades:
             try:
-                current_price = await self.binance.get_current_price(trade.symbol)
+                # trade is now a dictionary, not an ORM object
+                current_price = await self.binance.get_current_price(trade['symbol'])
                 await self._close_position(trade, current_price, reason)
             except Exception as e:
                 logger.error("Error closing position during shutdown",
-                           trade_id=trade.id,
+                           trade_id=trade['id'],
                            error=str(e))
